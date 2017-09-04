@@ -7,42 +7,44 @@ public class ZonalAudioControl : MonoBehaviour {
     [System.Serializable]
     public class ZonalAudio
     {
+        [Tooltip("Renames Element for organisational Purposes")]
+        public string ZoneName;
+        [HideInInspector] public string _ZoneName;
         public GameObject Zone;
-        [HideInInspector] public string ZoneName;
 
         [Tooltip("Only Add Sources That will be Effected By Zones")]
         // public List<AudioSource> SfxAudioSources = new List<AudioSource>();
         public AudioSource[] SfxAudioSources;
-        [HideInInspector] public float[] tempAudioValues;
+        [HideInInspector] public float[] TempAudioValues;
 
     }
 
     [Tooltip("Enter the amount of zones you will have for this level")]
     public ZonalAudio[] zonalAudio;
     public float fadeSpeed;
-    public bool zoneChanged = false;
-    private GameObject[] allAudioSources;
-    private PlayerZoneControl playerZoneControl;
+    public bool ZoneChanged;
+    private GameObject[] _allAudioSources;
+    private PlayerZoneControl _playerZoneControl;
 	void Start ()
 	{
-	    playerZoneControl = Camera.main.GetComponent<CameraFollow>().player.GetComponent<PlayerZoneControl>();
+	    _playerZoneControl = Camera.main.GetComponent<CameraFollow>().player.GetComponent<PlayerZoneControl>();
         InitializeClassValues();
 
-	    zoneChanged = true;
+	    ZoneChanged = true;
 
 	}
 	
 	// Update is called once per frame
 	void Update ()
     {
-        if (zoneChanged)
+        if (ZoneChanged)
         {
             StopAllCoroutines();
-            StartCoroutine(IncreaseZoneAudioSources(zonalAudio[ReturnAudioZoneNumber(playerZoneControl.currentZone)].SfxAudioSources,
-                zonalAudio[ReturnAudioZoneNumber(playerZoneControl.currentZone)].tempAudioValues));
-            StartCoroutine(DecreaseZoneAudioSources(allAudioSources));
+            StartCoroutine(IncreaseZoneAudioSources(zonalAudio[ReturnAudioZoneNumber(_playerZoneControl.currentZone)].SfxAudioSources,
+                zonalAudio[ReturnAudioZoneNumber(_playerZoneControl.currentZone)].TempAudioValues));
+            StartCoroutine(DecreaseZoneAudioSources(_allAudioSources));
 
-            zoneChanged = false;
+            ZoneChanged = false;
         }
 		
 	}
@@ -51,20 +53,20 @@ public class ZonalAudioControl : MonoBehaviour {
     {
         foreach (ZonalAudio t in zonalAudio)
         {
-            t.tempAudioValues = new float[t.SfxAudioSources.Length];
-            t.ZoneName = t.Zone.GetComponent<PlayerZoneLink>().zoneName;
+            t.TempAudioValues = new float[t.SfxAudioSources.Length];
+            t._ZoneName = t.Zone.GetComponent<PlayerZoneLink>().zoneName;
         }
         foreach (ZonalAudio t in zonalAudio)
         {
             for (int j = 0; j < t.SfxAudioSources.Length; j++)
             {
-                t.tempAudioValues[j] = t.SfxAudioSources[j].volume;
+                t.TempAudioValues[j] = t.SfxAudioSources[j].volume;
                 t.SfxAudioSources[j].mute = true;
                 t.SfxAudioSources[j].loop = true;
                 t.SfxAudioSources[j].playOnAwake = true;
             }
         }
-          allAudioSources = GameObject.FindGameObjectsWithTag("ZonalAudioSources");
+          _allAudioSources = GameObject.FindGameObjectsWithTag("ZonalAudioSources");
     }
 
 
@@ -74,7 +76,7 @@ public class ZonalAudioControl : MonoBehaviour {
 
         while (!turnUp)
         {
-            var checkedVolume = checkTargetVolume(audioSources);
+            var checkedVolume = CheckTargetVolume(audioSources);
 
             for (int i = 0; i < audioSources.Length; i++)
             {
@@ -84,16 +86,13 @@ public class ZonalAudioControl : MonoBehaviour {
                     audioSources[i].volume += fadeSpeed * Time.deltaTime;
                 }
 
-                if (checkedVolume)
+                if (!checkedVolume) continue;
+                for (int j = 0; j < audioSources.Length; j++)
                 {
-                    for (int j = 0; j < audioSources.Length; j++)
-                    {
-                        audioSources[j].volume = targetaudioValues[j];
-                    }
-
-                    turnUp = true;
+                    audioSources[j].volume = targetaudioValues[j];
                 }
 
+                turnUp = true;
             }
 
             yield return null;
@@ -102,7 +101,7 @@ public class ZonalAudioControl : MonoBehaviour {
 
     public IEnumerator DecreaseZoneAudioSources(GameObject[] audioSources)
     {
-        bool turnDown = false;
+        var turnDown = false;
 
         while (!turnDown)
         {
@@ -110,10 +109,10 @@ public class ZonalAudioControl : MonoBehaviour {
             {
                 bool match = false;
 
-                for (int i = 0; i < zonalAudio[ReturnAudioZoneNumber(playerZoneControl.currentZone)].SfxAudioSources.Length; i++)
+                for (int i = 0; i < zonalAudio[ReturnAudioZoneNumber(_playerZoneControl.currentZone)].SfxAudioSources.Length; i++)
                 {
                     if (audioSource.GetComponent<AudioSource>() ==
-                        zonalAudio[ReturnAudioZoneNumber(playerZoneControl.currentZone)].SfxAudioSources[i])
+                        zonalAudio[ReturnAudioZoneNumber(_playerZoneControl.currentZone)].SfxAudioSources[i])
                     {
                         match = true;
                         break;
@@ -126,16 +125,15 @@ public class ZonalAudioControl : MonoBehaviour {
                     audioSource.GetComponent<AudioSource>().volume -= fadeSpeed * Time.deltaTime;
                 }
             }
-
-           // turnDown = true;
             yield return null;
         }
     }
-    bool checkTargetVolume(AudioSource[] IncreaseVolumeSources)
+
+    public bool CheckTargetVolume(AudioSource[] IncreaseVolumeSources)
     {
             for (int j = 0; j < IncreaseVolumeSources.Length; j++)
             {
-                if (zonalAudio[ReturnAudioZoneNumber(playerZoneControl.currentZone)].SfxAudioSources[j].volume < zonalAudio[ReturnAudioZoneNumber(playerZoneControl.currentZone)].tempAudioValues[j])
+                if (zonalAudio[ReturnAudioZoneNumber(_playerZoneControl.currentZone)].SfxAudioSources[j].volume < zonalAudio[ReturnAudioZoneNumber(_playerZoneControl.currentZone)].TempAudioValues[j])
                 {
                     return false;
                 }
@@ -148,7 +146,7 @@ public class ZonalAudioControl : MonoBehaviour {
     {
         for (int i = 0; i < zonalAudio.Length; i++)
         {
-            if (currentZone == zonalAudio[i].ZoneName)
+            if (currentZone == zonalAudio[i]._ZoneName)
             {
                 return i;
             }

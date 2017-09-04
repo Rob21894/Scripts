@@ -22,7 +22,7 @@ public class PlayerZoneLink : MonoBehaviour
             if (playerZoneControl.currentZone != zoneName)
             {
                 playerZoneControl.UpdateZone(zoneName);
-                zoneAudioControl.zoneChanged = true;
+                zoneAudioControl.ZoneChanged = true;
             }
             
         }
